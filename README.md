@@ -6,6 +6,8 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-yellow.svg)](https://www.python.org/)
 
 A production-ready Django "Hello World" application demonstrating modern DevOps practices with Docker containerization and Kubernetes deployment. This project serves as a foundation for building scalable web applications in cloud-native environments.
+<img width="1284" height="660" alt="image" src="https://github.com/user-attachments/assets/d41051d2-86a2-4283-84b2-c11e04ff9e15" />
+
 
 ## ✨ Features
 
