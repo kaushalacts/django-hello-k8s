@@ -21,4 +21,7 @@ from hello import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index),
+    path('health/', views.health, name='health'),
+    path('readiness/', views.readiness, name='readiness'),
+    path('api/info/', views.api_info, name='api_info'),
 ]
