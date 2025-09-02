@@ -3,11 +3,16 @@ from django.http import HttpResponse, JsonResponse
 import datetime
 import socket
 import os
+import platform
 
 def index(request):
     """Enhanced index view with more server information"""
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """Enhanced index view with comprehensive environment information"""
+    current_time = datetime.datetime.now().strftime("%B %d, %Y at %H:%M:%S")
     hostname = socket.gethostname()
+    django_env = os.getenv('DJANGO_ENV', 'development')
+    namespace = os.getenv('KUBERNETES_NAMESPACE', 'default')
+    
     python_version = f"{os.sys.version.split()[0]}"
     pod_ip = os.getenv('POD_IP', 'localhost')
     
@@ -17,25 +22,34 @@ def index(request):
             <title>Hello from Django on Kubernetes - Enhanced</title>
             <style>
                 body {{
-                    font-family: Arial, sans-serif;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                     text-align: center;
-                    background: linear-gradient(to right, #4facfe, #00f2fe);
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     color: white;
-                    margin-top: 80px;
+                    margin-top: 70px;
                 }}
                 h1 {{
-                    font-size: 50px;
-                    margin-bottom: 20px;
+                    font-size: 55px;
+                    margin-bottom: 25px;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
                 }}
                 p {{
-                    font-size: 20px;
+                    font-size: 18px;
+                    margin: 10px 0;
                 }}
                 .box {{
-                    background: rgba(0,0,0,0.3);
+                    background: rgba(0,0,0,0.4);
                     display: inline-block;
-                    padding: 30px 50px;
-                    border-radius: 15px;
-                    box-shadow: 0px 4px 20px rgba(0,0,0,0.5);
+                    padding: 35px 55px;
+                    border-radius: 20px;
+                    box-shadow: 0px 6px 25px rgba(0,0,0,0.6);
+                }}
+                .env-info {{
+                    background: rgba(255,255,255,0.15);
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin-top: 20px;
+                    border: 1px solid rgba(255,255,255,0.2);
                 }}
                 .server-info {{
                     background: rgba(255,255,255,0.1);
@@ -73,3 +87,15 @@ def health(request):
 def readiness(request):
     """Readiness probe endpoint"""
     return HttpResponse('OK', status=200)
+def api_info(request):
+    """API endpoint for environment information"""
+    return JsonResponse({
+        'app_name': 'django-hello-k8s',
+        'version': '1.0.0',
+        'environment': os.getenv('DJANGO_ENV', 'development'),
+        'timestamp': datetime.datetime.now().isoformat(),
+        'pod_info': {
+            'name': socket.gethostname(),
+            'namespace': os.getenv('KUBERNETES_NAMESPACE', 'default')
+        }
+    })

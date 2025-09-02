@@ -1,32 +1,54 @@
-FROM python:3.12-slim
+# Multi-stage build with security - keeping original simplicity
+FROM python:3.12-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies for security and monitoring
+# Install dependencies in builder stage for optimization
+COPY requirements.txt /app/
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+
+# Production stage - your original structure enhanced
+FROM python:3.12-slim
+
+# Install runtime dependencies (curl for health checks)
 RUN apt-get update && apt-get install -y \
-    gcc \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+# Set work directory (keeping your original)
+WORKDIR /app
 
-# Copy project files
+# Install dependencies from wheels (faster and smaller)
+COPY --from=builder /app/wheels /wheels
+COPY requirements.txt /app/
+RUN pip install --no-cache /wheels/*
+
+# Copy project files (keeping your original)
 COPY . /app
 
-# Create non-root user for security
+# Add security without breaking your workflow
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 RUN chown -R appuser:appuser /app
 USER appuser
 
-# Add health check for container monitoring
+# Add health check using your new endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health/ || exit 1
 
-# Expose port
+# Environment variables for production
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_ENV=production
+
+# Expose port (keeping your original)
 EXPOSE 8000
 
-# Run Django app with security considerations
+# Keep your original Django runserver for development, but make it production-ready
+# You can switch this to gunicorn later if needed
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
