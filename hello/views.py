@@ -68,6 +68,13 @@ def index(request):
                     <p>Python Version: <b>{python_version}</b></p>
                     <p>Pod IP: <b>{pod_ip}</b></p>
                     <p>Health Status: <b>✅ Healthy</b></p>
+                    <p>Pod Name: <b>{hostname}</b></p>
+                <div class="env-info">
+                    <p>Environment: <b>{django_env}</b></p>
+                    <p>Namespace: <b>{namespace}</b></p>
+                    <p>OS: <b>{platform.system()}</b></p>
+                    <p>Python: <b>{platform.python_version()}</b></p>
+                </div>
                 </div>
                 <p>This app is running inside a container, deployed on Kubernetes ✨</p>
             </div>
