@@ -1,0 +1,10 @@
+version: '3.12'
+services:
+  web:
+    image: ghcr.io/kaushalacts/django-hello-k8s:latest
+    ports:
+      - "80:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=myproject.settings.production
+      - DEBUG=False
+    restart: always
