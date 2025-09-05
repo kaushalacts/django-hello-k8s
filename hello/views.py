@@ -4,6 +4,11 @@ import datetime
 import socket
 import os
 import platform
+import pytz
+
+
+start_time = datetime.datetime.now()
+request_count = 0
 
 def index(request):
     """Enhanced index view with more server information"""
@@ -106,3 +111,25 @@ def api_info(request):
             'namespace': os.getenv('KUBERNETES_NAMESPACE', 'default')
         }
     })
+
+def metrics(request):
+    """Basic metrics endpoint for monitoring"""
+    global request_count
+    request_count += 1
+    uptime = datetime.datetime.now() - start_time
+
+    return HttpResponse(
+        f"""
+        # HELP app_requests_total Total number of requests handled by this pod
+        # TYPE app_requests_total counter
+        app_requests_total {request_count}
+
+        # HELP app_uptime_seconds Uptime of the pod in seconds
+        # TYPE app_uptime_seconds gauge
+        app_uptime_seconds {int(uptime.total_seconds())}
+
+        # HELP app_environment Current environment
+        app_environment{{env="{os.getenv('DJANGO_ENV', 'development')}"}} 1
+        """,
+        content_type="text/plain"
+    )

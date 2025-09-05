@@ -24,4 +24,5 @@ urlpatterns = [
     path('health/', views.health, name='health'),
     path('readiness/', views.readiness, name='readiness'),
     path('api/info/', views.api_info, name='api_info'),
+    path("metrics/", views.metrics, name="metrics"),
 ]
