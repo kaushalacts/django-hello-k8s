@@ -58,7 +58,7 @@ jobs:
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}          # GitHub username
-        password: ${{ secrets.GITHUB_TOKEN }}  # GitHub provided token
+        password: ${{ secrets.GHCR_PAT }}  # GitHub provided token
 
     # Push the Docker image to registry
     - name: Push Docker image
