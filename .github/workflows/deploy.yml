@@ -71,25 +71,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set environment variables
-        run: |
-          if [[ ${{ github.ref }} == 'refs/heads/master' ]]; then
-            echo "ENVIRONMENT=production" >> $GITHUB_ENV
-            echo "DEPLOY_URL=http://localhost:8000" >> $GITHUB_ENV
-          elif [[ ${{ github.ref }} == 'refs/heads/develop' ]]; then
-            echo "ENVIRONMENT=development" >> $GITHUB_ENV
-            echo "DEPLOY_URL=http://localhost:8000" >> $GITHUB_ENV
-          elif [[ ${{ github.ref }} == 'refs/heads/uat' ]]; then
-            echo "ENVIRONMENT=uat" >> $GITHUB_ENV
-            echo "DEPLOY_URL=http://localhost:8000" >> $GITHUB_ENV
-          fi
+    - name: Set environment variables
+      run: |
+        if [[ ${{ github.ref }} == 'refs/heads/master' ]]; then
+          echo "ENVIRONMENT=production" >> $GITHUB_ENV
+          echo "DEPLOY_URL=http://localhost:8000" >> $GITHUB_ENV
+        elif [[ ${{ github.ref }} == 'refs/heads/develop' ]]; then
+          echo "ENVIRONMENT=development" >> $GITHUB_ENV
+          echo "DEPLOY_URL=http://localhost:8000" >> $GITHUB_ENV
+        elif [[ ${{ github.ref }} == 'refs/heads/uat' ]]; then
+          echo "ENVIRONMENT=uat" >> $GITHUB_ENV
+          echo "DEPLOY_URL=http://localhost:8000" >> $GITHUB_ENV
+        fi
 
-      - name: Run container with Docker
-        run: |
-          echo "Deploying to ${{ env.ENVIRONMENT }} environment using Docker..."
-          docker run -d -p 8000:8000 --name hello-world \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          echo "Application running at: ${{ env.DEPLOY_URL }}"
+    - name: Login to Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PAT }}
+
+    - name: Run container with Docker
+      run: |
+        echo "Deploying to ${{ env.ENVIRONMENT }} environment using Docker..."
+        docker run -d -p 8000:8000 --name hello-world \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        echo "Application running at: ${{ env.DEPLOY_URL }}"
+
   # Third job: Send notifications
   notify:
     needs: [build-and-test, deploy] # Runs after both previous jobs
