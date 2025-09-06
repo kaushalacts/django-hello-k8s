@@ -113,7 +113,7 @@ jobs:
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}      # Success, failure, or cancelled
-        channel: '#deployments'       # Slack channel to post to
+        channel: '#web'       # Slack channel to post to
         text: |
           Deployment Status: ${{ job.status }}
           Environment: ${{ needs.deploy.outputs.environment || 'N/A' }}
