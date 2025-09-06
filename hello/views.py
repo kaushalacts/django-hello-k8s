@@ -24,7 +24,7 @@ def index(request):
     html = f"""
     <html>
         <head>
-            <title>Hello from Django on Kubernetes - Enhanced</title>
+            <title>Hello from Django on Kubernetes  </title>
             <style>
                 body {{
                     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
