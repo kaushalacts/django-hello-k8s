@@ -4,126 +4,111 @@ name: Branch-Based Deployment Pipeline
 # Trigger conditions - when this workflow should run
 on:
   push:
-    branches: 
-      - master       # Triggers on push to main branch
-      - develop     # Triggers on push to develop branch
-      - uat         # Triggers on push to uat branch
+    branches:
+      - master # Triggers on push to main branch
+      - develop # Triggers on push to develop branch
+      - uat # Triggers on push to uat branch
   pull_request:
-    branches: 
-      - master        # Triggers on PR to main branch
+    branches:
+      - master # Triggers on PR to main branch
 
 # Define environment variables available to all jobs
 env:
-  REGISTRY: ghcr.io                    # GitHub Container Registry
+  REGISTRY: ghcr.io # GitHub Container Registry
   IMAGE_NAME: ${{ github.repository }} # Repository name as image name
 
 # Define the jobs that will run
 jobs:
   # First job: Build and test the application
   build-and-test:
-    runs-on: ubuntu-latest             # Use Ubuntu runner
-    
-    steps:
-    # Download the repository code to the runner
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    # Set up Python environment
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'         # Specify Python version
-    
-    # Install Python dependencies
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip    # Upgrade pip
-        pip install -r requirements.txt       # Install project dependencies
-        pip install pytest pytest-django     # Install testing tools
-    
-    # Run tests to ensure code quality
-    - name: Run tests
-      run: |
-        python manage.py test                 # Run Django tests
-    
-    # Build Docker image for the application
-    - name: Build Docker image
-      run: |
-        # Build image with tag based on git commit hash
-        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-    
-    # Login to GitHub Container Registry
-    - name: Login to Container Registry
-      uses: docker/login-action@v2
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}          # GitHub username
-        password: ${{ secrets.GHCR_PAT }}  # GitHub provided token
+    runs-on: ubuntu-latest # Use Ubuntu runner
 
-    # Push the Docker image to registry
-    - name: Push Docker image
-      run: |
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    steps:
+      # Download the repository code to the runner
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12" # Specify Python version
+
+      # Install Python dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip    # Upgrade pip
+          pip install -r requirements.txt       # Install project dependencies
+          pip install pytest pytest-django     # Install testing tools
+
+      # Run tests to ensure code quality
+      - name: Run tests
+        run: |
+          python manage.py test                 # Run Django tests
+
+      # Build Docker image for the application
+      - name: Build Docker image
+        run: |
+          # Build image with tag based on git commit hash
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+
+      # Login to GitHub Container Registry
+      - name: Login to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }} # GitHub username
+          password: ${{ secrets.GHCR_PAT }} # GitHub provided token
+
+      # Push the Docker image to registry
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   # Second job: Deploy to appropriate environment
   deploy:
-    needs: build-and-test              # This job runs after build-and-test succeeds
+    needs: build-and-test
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    # Determine which environment to deploy to based on branch
-    - name: Set environment variables
-      run: |
-        if [[ ${{ github.ref }} == 'refs/heads/master' ]]; then
-          echo "ENVIRONMENT=production" >> $GITHUB_ENV
-          echo "DEPLOY_URL=https://hello-app-prod.com" >> $GITHUB_ENV
-        elif [[ ${{ github.ref }} == 'refs/heads/develop' ]]; then
-          echo "ENVIRONMENT=development" >> $GITHUB_ENV
-          echo "DEPLOY_URL=https://hello-app-dev.com" >> $GITHUB_ENV
-        elif [[ ${{ github.ref }} == 'refs/heads/uat' ]]; then
-          echo "ENVIRONMENT=uat" >> $GITHUB_ENV
-          echo "DEPLOY_URL=https://hello-app-uat.com" >> $GITHUB_ENV
-        fi
-    
-    # Simulate deployment (replace with actual deployment commands)
-    - name: Deploy to ${{ env.ENVIRONMENT }}
-      run: |
-        echo "Deploying to ${{ env.ENVIRONMENT }} environment..."
-        
-        # Example deployment commands (customize based on your infrastructure)
-        # For Kubernetes:
-        kubectl set image deployment/hello-world-deployment hello-world=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n ${{ env.ENVIRONMENT }}
-        kubectl rollout status deployment/hello-world-deployment -n ${{ env.ENVIRONMENT }}
+      - name: Set environment variables
+        run: |
+          if [[ ${{ github.ref }} == 'refs/heads/master' ]]; then
+            echo "ENVIRONMENT=production" >> $GITHUB_ENV
+            echo "DEPLOY_URL=http://localhost:8000" >> $GITHUB_ENV
+          elif [[ ${{ github.ref }} == 'refs/heads/develop' ]]; then
+            echo "ENVIRONMENT=development" >> $GITHUB_ENV
+            echo "DEPLOY_URL=http://localhost:8000" >> $GITHUB_ENV
+          elif [[ ${{ github.ref }} == 'refs/heads/uat' ]]; then
+            echo "ENVIRONMENT=uat" >> $GITHUB_ENV
+            echo "DEPLOY_URL=http://localhost:8000" >> $GITHUB_ENV
+          fi
 
-        echo "Deployment to ${{ env.ENVIRONMENT }} completed!"
-        echo "Application available at: ${{ env.DEPLOY_URL }}"
-
+      - name: Run container with Docker
+        run: |
+          echo "Deploying to ${{ env.ENVIRONMENT }} environment using Docker..."
+          docker run -d -p 8000:8000 --name hello-world \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          echo "Application running at: ${{ env.DEPLOY_URL }}"
   # Third job: Send notifications
   notify:
-    needs: [build-and-test, deploy]     # Runs after both previous jobs
+    needs: [build-and-test, deploy] # Runs after both previous jobs
     runs-on: ubuntu-latest
-    if: always()                       # Always run, even if previous jobs fail
-    
+    if: always() # Always run, even if previous jobs fail
+
     steps:
-    # Send Slack notification (requires SLACK_WEBHOOK_URL secret)
-    - name: Slack Notification
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}      # Success, failure, or cancelled
-        channel: '#web'       # Slack channel to post to
-        text: |
-          Deployment Status: ${{ job.status }}
-          Environment: ${{ needs.deploy.outputs.environment || 'N/A' }}
+      # Send Slack notification (requires SLACK_WEBHOOK_URL secret)
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ needs.deploy.result }} # or combine with build job
+          channel: "#web"
+          text: |
+            Deployment Status: ${{ needs.deploy.result }}
+          Build Status: ${{ needs.build-and-test.result }}
           Branch: ${{ github.ref_name }}
           Commit: ${{ github.sha }}
           Author: ${{ github.actor }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      if: always()
-
-
-
-# End of workflow file
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always()
